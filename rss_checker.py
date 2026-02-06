@@ -7,6 +7,7 @@ import time
 
 TWITTER_USERS = [
     "elonmusk",
+    "hgsc001",
 ]
 
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
