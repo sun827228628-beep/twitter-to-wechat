@@ -6,7 +6,7 @@ from datetime import datetime
 import time
 
 TWITTER_USERS = [
-    "hgsc001",
+    "elonmusk",
 ]
 
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
@@ -86,4 +86,19 @@ def check_rss():
                     
                     print(f"NEW: {title[:50]}...")
                     
-                    if send_to_wechat
+                    if send_to_wechat(title, link, author):
+                        save_sent_item(item_id)
+                        new_count += 1
+                    
+                    time.sleep(2)
+                else:
+                    print(f"SKIP: already sent")
+                    
+        except Exception as e:
+            print(f"ERROR: {e}")
+    
+    print(f"\nDONE! Sent {new_count} new tweets")
+
+if __name__ == '__main__':
+    print(f"START: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    check_rss()
