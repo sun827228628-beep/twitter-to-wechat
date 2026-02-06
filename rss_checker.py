@@ -7,7 +7,7 @@ from datetime import datetime
 # ===== 配置区域 =====
 # 要监控的推特用户(可以添加多个)
 TWITTER_USERS = [
-    "elonmusk",      # 例子:埃隆马斯克
+    "hgsc001",      # 例子:埃隆马斯克
     # "OpenAI",      # 取消注释来添加更多
     # "sama",
 ]
