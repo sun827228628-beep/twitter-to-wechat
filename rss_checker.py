@@ -15,6 +15,8 @@ TWITTER_USERS = [
 # Weibo user UIDs to monitor (get from weibo.com/u/UID)
 WEIBO_USERS = [
     "5170800388",
+   "6892172355",
+   "6084251294",
 ]
 
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
