@@ -5,22 +5,29 @@ import os
 from datetime import datetime
 import time
 
- #Twitter usernames to monitor
+# Twitter usernames to monitor
 TWITTER_USERS = [
-   "elonmusk",
+    "elonmusk",
     "hgsc001",
     "tokutei_view",
 ]
 
-# Weibo user UIDs to monitor (get from weibo.com/u/UID)
+# Weibo user UIDs to monitor
 WEIBO_USERS = [
-    "5170800388",
+   "5170800388",
    "6892172355",
    "6084251294",
 ]
 
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 SENT_FILE = 'sent_items.txt'
+
+# Multiple RSSHub instances to try
+RSSHUB_INSTANCES = [
+    "https://rsshub.rssforever.com",
+    "https://rss.shab.fun",
+    "https://rsshub.app",
+]
 
 def load_sent_items():
     if os.path.exists(SENT_FILE):
@@ -72,34 +79,46 @@ def check_twitter():
     new_count = 0
     
     for username in TWITTER_USERS:
-        rss_url = f"https://rsshub.app/twitter/user/{username}"
+        success = False
         
-        try:
-            print(f"\nChecking Twitter @{username}...")
-            feed = feedparser.parse(rss_url)
+        for instance in RSSHUB_INSTANCES:
+            rss_url = f"{instance}/twitter/user/{username}"
             
-            if not feed.entries:
-                print(f"WARNING: No entries found")
-                continue
-            
-            for entry in feed.entries[:3]:
-                item_id = entry.get('id', entry.link)
+            try:
+                print(f"\nTrying {instance} for Twitter @{username}...")
+                feed = feedparser.parse(rss_url)
                 
-                if item_id not in sent_items:
-                    title = entry.get('title', 'No title')
-                    link = entry.get('link', '')
+                if feed.entries:
+                    print(f"SUCCESS with {instance}, found {len(feed.entries)} entries")
+                    success = True
                     
-                    print(f"NEW: {title[:50]}...")
+                    for entry in feed.entries[:3]:
+                        item_id = entry.get('id', entry.link)
+                        
+                        if item_id not in sent_items:
+                            title = entry.get('title', 'No title')
+                            link = entry.get('link', '')
+                            
+                            print(f"NEW: {title[:50]}...")
+                            
+                            content = f"Twitter @{username} posted:\n\n{title}\n\n{link}"
+                            if send_to_wechat(content):
+                                save_sent_item(item_id)
+                                new_count += 1
+                            
+                            time.sleep(2)
                     
-                    content = f"Twitter @{username} posted:\n\n{title}\n\n{link}"
-                    if send_to_wechat(content):
-                        save_sent_item(item_id)
-                        new_count += 1
+                    break  # Success, stop trying other instances
+                else:
+                    print(f"No entries from {instance}")
                     
-                    time.sleep(2)
-                    
-        except Exception as e:
-            print(f"ERROR: {e}")
+            except Exception as e:
+                print(f"Failed with {instance}: {str(e)[:100]}")
+                time.sleep(1)
+                continue
+        
+        if not success:
+            print(f"WARNING: All instances failed for @{username}")
     
     return new_count
 
@@ -108,41 +127,54 @@ def check_weibo():
     new_count = 0
     
     for uid in WEIBO_USERS:
-        rss_url = f"https://rsshub.app/weibo/user/{uid}"
+        success = False
         
-        try:
-            print(f"\nChecking Weibo user {uid}...")
-            feed = feedparser.parse(rss_url)
+        for instance in RSSHUB_INSTANCES:
+            rss_url = f"{instance}/weibo/user/{uid}"
             
-            if not feed.entries:
-                print(f"WARNING: No entries found")
-                continue
-            
-            author = feed.feed.get('title', f'Weibo-{uid}')
-            
-            for entry in feed.entries[:3]:
-                item_id = entry.get('id', entry.link)
+            try:
+                print(f"\nTrying {instance} for Weibo UID {uid}...")
+                feed = feedparser.parse(rss_url)
                 
-                if item_id not in sent_items:
-                    title = entry.get('title', 'No title')
-                    link = entry.get('link', '')
+                if feed.entries:
+                    print(f"SUCCESS with {instance}, found {len(feed.entries)} entries")
+                    success = True
                     
-                    print(f"NEW: {title[:50]}...")
+                    author = feed.feed.get('title', f'Weibo-{uid}')
                     
-                    content = f"Weibo @{author} posted:\n\n{title}\n\n{link}"
-                    if send_to_wechat(content):
-                        save_sent_item(item_id)
-                        new_count += 1
+                    for entry in feed.entries[:3]:
+                        item_id = entry.get('id', entry.link)
+                        
+                        if item_id not in sent_items:
+                            title = entry.get('title', 'No title')
+                            link = entry.get('link', '')
+                            
+                            print(f"NEW: {title[:50]}...")
+                            
+                            content = f"Weibo @{author} posted:\n\n{title}\n\n{link}"
+                            if send_to_wechat(content):
+                                save_sent_item(item_id)
+                                new_count += 1
+                            
+                            time.sleep(2)
                     
-                    time.sleep(2)
+                    break  # Success, stop trying other instances
+                else:
+                    print(f"No entries from {instance}")
                     
-        except Exception as e:
-            print(f"ERROR: {e}")
+            except Exception as e:
+                print(f"Failed with {instance}: {str(e)[:100]}")
+                time.sleep(1)
+                continue
+        
+        if not success:
+            print(f"WARNING: All instances failed for UID {uid}")
     
     return new_count
 
 if __name__ == '__main__':
     print(f"START: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Using RSSHub instances: {', '.join(RSSHUB_INSTANCES)}")
     
     twitter_count = check_twitter()
     weibo_count = check_weibo()
